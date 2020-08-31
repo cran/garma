@@ -186,7 +186,7 @@ garma<-function(x,
   #  stop('Sorry. Only d=0 or d=1 is supported for now (for the integer portion of d).\nWe suggest you manually difference the series using diff() if you need more than this.')
   storage.mode(x) <- 'double'
 
-  if (d>0) y<-diff(x,differences=d) else y<-x
+  if (d>0) y<-diff(x,lag=d) else y<-x
   mean_y <- mean(y)
   sd_y   <- stats::sd(y)
   ss<-stats::spectrum((y-mean_y)/sd_y,plot=FALSE,detrend=FALSE,demean=FALSE,method='pgram',taper=0,fast=FALSE)
@@ -384,12 +384,15 @@ garma<-function(x,
             'order'=order,
             'k'=k,
             'y'=x,
+            'diff_y'=y,
             'y_start'=x_start,
             'y_end'=x_end,
             'y_freq'=x_freq,
             'include.mean'=include.mean,
             'fitted'=stats::ts(fitted$fitted,start=x_start,end=x_end,frequency=x_freq),
             'residuals'=stats::ts(fitted$residuals,start=x_start,end=x_end,frequency=x_freq),
+            fit_par = fit$par,
+            params = params,
             'm_trunc'=m_trunc)
   if (opt_method[1]=='best') res<-c(res,'opt_method_selected'=fit$best_method)
   if (k>0) res<-c(res, 'ggbr_factors' = list(gf))
@@ -487,45 +490,28 @@ predict.garma_model<-function(object,n.ahead=1,...) {
     beta0  <- 0
     start  <- 1
   }
-  # jump over the ggbr params
+  # jump over the ggbr params; we get those separately.
   start <- start + ((object$k)*2)
-
-  # if (p>0) phi_vec   <- c((coef[start:(start+p-1)] ))       else phi_vec   <- c()
-  # if (q>0) theta_vec <- c((coef[(p+start):(length(coef))])) else theta_vec <- c()
-
-  if (object$order[2]==0)
-    ydm <- object$y - beta0
-  else if (object$order[2]>0)
-    ydm <- diff(object$y,object$order[2]) - beta0
-
-  # Next section uses eqn 5.3.9 from Brockwell & Davis (1991)
-  # to calculate forecasts for the short memory component.
-  # n <- length(ydm)
-  # resid <- object$residuals
-  # ydm <- c(ydm,rep(0,n.ahead))
-  # if (p>0) {
-  #   for (h in 1:n.ahead)
-  #     ydm[n+h] <- ydm[n+h] + ydm[(n+h-1):(n+h-p)] %*% phi_vec
-  #   print(tail(ydm,n.ahead))
-  # }
-  # if(q>0) {
-  #   for (h in 1:min(q,n.ahead)) {
-  #     ydm[n+h] <- ydm[n+h] + resid[n:(n-q+h)] %*% theta_vec[h:q]
-  #     print(tail(ydm,n.ahead))
-  #   }
-  # }
 
   if (p>0) phi_vec   <- c(1,-(coef[start:(start+p-1)] ))      else phi_vec   <- 1
   if (q>0) theta_vec <- c(1,(coef[(p+start):(length(coef))])) else theta_vec <- 1
 
-  n <- length(ydm)
+  n <- length(object$y)
   ydm <- c(object$residuals, rep(0,n.ahead))
+  mean_y <- mean(object$y)
+  # We need the mean of the integer-differenced (if any) series
+  id <- object$order[2]
+  if(id>0) {
+      mean_y <- mean(diff(object$y,lag=id))
+    # starting point - the 'white noise' residuals
+    ydm <- ydm + mean_y
+  }
 
   # set up filters
   arma_filter <- signal::Arma(b=theta_vec, a=phi_vec)
   ydm <- signal::filter(arma_filter, ydm)
   if (object$k>0) {
-    # for each ggbr factor, we set up a filter and add it to the list
+    # for each ggbr factor, we set up a filter and apply
     for (k1 in 1:object$k) {
       gf <- object$ggbr_factors[[k1]]
       gc <- .ggbr.coef(n+n.ahead,gf$fd,gf$u)
@@ -534,13 +520,16 @@ predict.garma_model<-function(object,n.ahead=1,...) {
     }
   }
 
-  # if (integer) differenced then...
-  if (object$order[2]>0) {
-    ydm2 <- stats::diffinv(ydm,differences=object$order[2]) + beta0
-  }
-  else ydm2 <- ydm + beta0
+  #print(tail(ydm,n.ahead))
+  #print(beta0)
 
-  # Now we have the forecasts, we set these up as a "ts" object - as does "predict.arima"
+  # if (integer) differenced then...
+  if (id>0) {
+    fc <- tail(stats::diffinv(tail(ydm,n.ahead)+mean_y,lag=id,xi=tail(object$y,id)),n.ahead)
+  }
+  else fc <- tail(ydm,n.ahead)+ifelse(object$include.mean,beta0,mean_y)
+
+  # Now we have the forecasts, we set these up as a "ts" object
   y_end = object$y_end
   if(length(y_end)>1) {
     if (object$y_freq >= y_end[2]) {
@@ -550,7 +539,7 @@ predict.garma_model<-function(object,n.ahead=1,...) {
     else y_end[2] <- y_end[2] + 1
   } else y_end <- y_end +1
 
-  res <- stats::ts(tail(ydm2,n.ahead),start=y_end,frequency=object$y_freq)
+  res <- stats::ts(fc,start=y_end,frequency=object$y_freq)
   return(list(mean=res))
 }
 
@@ -570,7 +559,7 @@ forecast.garma_model<-function(mdl,h=1) {return(predict.garma_model(mdl,n.ahead=
 
 
 .fitted_values<-function(par,params) { # Generate fitted values and residuals for GARMA process
-  y <- params$y
+  y <- as.numeric(params$y)
   p <- params$p
   q <- params$q
   id <- params$d
@@ -586,11 +575,6 @@ forecast.garma_model<-function(mdl,h=1) {return(predict.garma_model(mdl,n.ahead=
     beta0  <- 0
     start  <- 1
   }
-  # if (k==1) {
-  #   u      <- par[start]
-  #   fd     <- par[start+1]
-  #   start  <- start+2
-  # } else u<-fd<-0.0
   u <- c()
   fd <- c()
   if (k>0) for (k1 in 1:k) {
@@ -599,27 +583,30 @@ forecast.garma_model<-function(mdl,h=1) {return(predict.garma_model(mdl,n.ahead=
     start <- start+2
   }
 
-
   y_dash <- y-beta0
   if (p>0) phi_vec   <- c(1,-(par[start:(start+p-1)] ))     else phi_vec   <- 1
   if (q>0) theta_vec <- c(1,(par[(p+start):(length(par))])) else theta_vec <- 1
-
   arma_filter   <- signal::Arma(a = theta_vec, b = phi_vec)
   eps           <- signal::filter(arma_filter, y_dash)
   if (k>0) for (k1 in 1:k) {
     ggbr_filter <- signal::Arma(b = 1, a = .ggbr.coef(length(y_dash),fd[k1],u[k1]))
     eps         <- signal::filter(ggbr_filter, eps)
   }
-
-  # if (integer) differenced then...
-  eps_y <- eps
-  fitted <- (params$y-eps)
+  undiff_fitted <- fitted <- (y - eps)
+  act <- y
   if (id>0) {
-    eps_y <- stats::diffinv(fitted,differences = id)
-    fitted <- (params$orig_y-eps_y)
+    #fitted  <- stats::diffinv(fitted,lag=id,xi=params$orig_y[1:id])
+    diff_fitted <- fitted
+    fitted  <- params$orig_y[1:id]
+    n<-length(params$orig_y)
+    for (id1 in 1:id) {
+      for (i in (id+1):n) fitted <- c(fitted,(params$orig_y[i-1]+diff_fitted[i-1]))
+    }
+    #act     <- stats::diffinv(y,lag=id,xi=params$orig_y[1:id])
+    eps     <- (params$orig_y - fitted)
   }
 
-  return(list(fitted=fitted,residuals=eps_y))
+  return(list(fitted=fitted,residuals=eps))
 }
 
 #' @export
