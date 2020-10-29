@@ -10,13 +10,14 @@ garma(
   order = list(0, 0, 0),
   k = 1,
   include.mean = (order[2] == 0),
+  include.drift = (order[2] > 0),
   method = "Whittle",
   allow_neg_d = FALSE,
-  maxeval = 10000,
   opt_method = NULL,
   m_trunc = 50,
   min_freq = 0,
-  max_freq = 0.5
+  max_freq = 0.5,
+  control = NULL
 )
 }
 \arguments{
@@ -25,16 +26,18 @@ garma(
 \item{order}{(list) This should be a list (similar to the stats::arima order parameter) which will give the order of the process to fit.
 The format should be list(p,d,q) where p, d, and q are all positive integers. p represents the degree of the
 autoregressive process to fit, q represents the order of the moving average process to fit and d is the (integer)
-differencing to apply prior to any fitting.}
+differencing to apply prior to any fitting. WARNING: Currently only d==0 or d==1 are allowed.}
 
-\item{k}{(int) This is the number of (multiplicative) Gegenbauer terms to fit.}
+\item{k}{(int) This is the number of (multiplicative) Gegenbauer terms to fit. Note the 'QML' method only allows k=1.}
 
-\item{include.mean}{(bool) A boolean value indicating whether a mean should be fit. Note if you have any differencing, then
-it generally does not make sense to fit a mean term. Because of this, the default here is to fit a mean time when d (in the "order" parmaeter)
-is zero and otherwise not.}
+\item{include.mean}{(bool) A boolean value indicating whether a mean should be fit.
+Note that no mean term is fit if the series is integer differenced.}
+
+\item{include.drift}{(bool) A boolean value indicating whether a 'drift' term should be fit to the predictions.
+The default is to fit a drift term to the predictions if the process is integer-differenced.}
 
 \item{method}{(character) This defines the estimation method for the routine. The valid values are 'CSS', 'Whittle', 'QML' and 'WLL'.
-The default (Whittle) will generally return very accurate estimates quite quickly, provided the asumption of a Gaussian
+The default (Whittle) will generally return very accurate estimates quite quickly, provided the assumption of a Gaussian
 distribution is even approximately correct, and is probably the method of choice for most users. For the theory behind this, refer Giraitis et. al. (2001)
 'CSS' is a conditional 'sum-of-squares' technique and can be quite slow. Reference: Chung (1996).
 'QML' is a Quasi-Maximum-Likelihood technique, and can also be quite slow. Reference Dissanayake (2016). (k>1 is not supported for QML)
@@ -43,8 +46,6 @@ However the asymptotic theory for the WLL method is not complete and so standard
 
 \item{allow_neg_d}{(bool) A boolean value indicating if a negative value is allowed for the fractional differencing component
 of the Gegenbauer term is allowed. This can be set to FALSE (the default) to force the routine to find a positive value.}
-
-\item{maxeval}{(int) the maximum function eveluations to be allowed during each optimisation.}
 
 \item{opt_method}{(character) This names the optimisation method used to find the parameter estimates.
 This may be a list of methods, in which case the methods are applied in turn,
@@ -60,6 +61,7 @@ Supported algorithms include:
     \item hjkb from dfoptim package
     \item nmkb from dfoptim package
     \item solnp from Rsolnp package
+    \item gosolnp from Rsolnp package
     \item best - this option evaluates all the above options in turn and picks the one which finds the lowest value of the objective. This can be quite time consuming to run,
     particularly for the 'CSS' method.
     }
@@ -71,6 +73,8 @@ Note further that if you specify a k>1, then inequality constraints are required
 AR(1) component, the peaks corresponding to the AR(1) can be higher than the Gegenbauer peaks. Setting this parameter to 0.05 or above can help.}
 
 \item{max_freq}{(num) default 0.5. When searching for Gegenbauer peaks, this is the maximum frequency used.}
+
+\item{control}{(list) list of optimisation routine specific values.}
 }
 \value{
 An S3 object of class "garma_model".
@@ -85,13 +89,14 @@ for those parameters.
 }
 \details{
 The GARMA model is specified as
-\deqn{\displaystyle{\phi(B)\prod_{i=1}^{k}(1-2u_{i}B+B^{2})^{d_{i}}(X_{t}-\mu)= \theta(B) \epsilon _{t}}}{\prod(i=1 to k) (1-2u(i)B+B^2)^d(i) \phi(B) (X(t) - \mu) = \theta(B) \epsilon(t)}
+\deqn{\displaystyle{\phi(B)\prod_{i=1}^{k}(1-2u_{i}B+B^{2})^{d_{i}}(1-B)^{id} (X_{t}-\mu)= \theta(B) \epsilon _{t}}}{\prod(i=1 to k) (1-2u(i)B+B^2)^d(i) \phi(B)(1-B)^{id} (X(t) - \mu) = \theta(B) \epsilon(t)}
 
 where
 \itemize{
 \item \eqn{\phi(B)}{\phi(B)} represents the short-memory Autoregressive component of order p,
 \item \eqn{\theta(B)}{\theta(B)} represents the short-memory Moving Average component of order q,
 \item \eqn{(1-2u_{i}B+B^{2})^{d_{i}}}{(1-2u(i)B+B^2)^d(i)} represents the long-memory Gegenbauer component (there may in general be k of these),
+\item \eqn{id} represents the degree of integer differencing.
 \item \eqn{X_{t}}{X(t)} represents the observed process,
 \item \eqn{\epsilon_{t}}{\epsilon(t)} represents the random component of the model - these are assumed to be uncorrelated but identically distributed variates.
       Generally the routines in this package will work best if these have an approximate Gaussian distribution.
@@ -108,13 +113,13 @@ print(arima(ap,order=c(9,1,0),include.mean=FALSE))
 }
 \references{
 C Chung. A generalized fractionally integrated autoregressive moving-average process.
-*Journal of Time Series Analysis*, **17**(2):111–140, 1996.
+Journal of Time Series Analysis, 17(2):111–140, 1996.
 
 G Dissanayake, S Peiris, and T Proietti. State space modelling of Gegenbauer processes with long memory.
-*Computational Statistics and Data Analysis*, **100**:115–130, 2016.
+Computational Statistics and Data Analysis, 100:115–130, 2016.
 
 L Giraitis, J Hidalgo, and P Robinson. Gaussian estimation of parametric spectral density with unknown pole.
-*The Annals of Statistics*, **29**(4):987–1023, 2001.
+The Annals of Statistics, 29(4):987–1023, 2001.
 }
 \author{
 Richard Hunt

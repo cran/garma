@@ -54,17 +54,31 @@ data(AirPassengers)
 ap  <- as.numeric(diff(AirPassengers,12))
 
 # Arima model
-arima_mdl <- arima(ap,order=c(9,1,0))
+arima_mdl <- arima(ap,order=c(9,1,0),method='CSS')
 summary(arima_mdl)
 
 # GARMA model
 # Note in the below we specify k=0.
 # This tells the routine is not to fit a Gegenbauer/GARMA model.
-garma_mdl <- garma(ap,order=c(9,1,0),k=0)
+garma_mdl <- garma(ap,order=c(9,1,0),k=0,method='CSS')
 summary(garma_mdl)
 
 
 ## ----sunspot1-----------------------------------------------------------------
+library(garma)
+
+data(sunspot.year)
+
+# Next we subset the data to ensure we are using the years used in the literature.
+sunspots <- ts(sunspot.year[49:224],start=1749,end=1924)
+
+# Now as in Gray et al 1989 we fit a GARMA(1,0) model:
+sunspots_arima_mdl <- arima(sunspots, order=c(9,0,0),method='CSS')
+
+summary(sunspots_arima_mdl)
+
+
+## ----sunspot2-----------------------------------------------------------------
 library(garma)
 
 data(sunspot.year)
@@ -78,15 +92,33 @@ sunspots_garma_mdl <- garma(sunspots, order=c(1,0,0),k=1,method='CSS')
 summary(sunspots_garma_mdl)
 
 
-## ----sunspot2, fig.width=7, fig.height=5--------------------------------------
-# fit a GARMA(8,0,0) model
-sunspots_garma_mdl <- garma(sunspots, order=c(8,0,0),k=1,method='CSS')
-summary(sunspots_garma_mdl)
+## ----sunspot3-----------------------------------------------------------------
+library(yardstick)
 
-#prepare 'future' actuals data for plotting
-future_df <- data.frame(yr=1925:1935, sunspots=sunspot.year[225:235],grp='Future Actuals')
+(sunspots_garma_mdl <- garma(sunspots, order = c(9, 0, 0), k = 1))
 
-ggplot(sunspots_garma_mdl, h=11) +
-  geom_line(data=future_df,aes(x=yr,y=sunspots)) +
-  ggtitle('Sunspot Forecast using GARMA(8,0)')
+compare_df <- data.frame(yr=1925:1935,
+                         Actuals=as.numeric(sunspot.year[225:235]),
+                         ARIMA=forecast(sunspots_arima_mdl,h=11)$mean,
+                         GARMA=forecast(sunspots_garma_mdl,h=11)$mean)
+
+cat(sprintf('\n\nEvaluating Test set data from 1925 to 1936.\n\nARIMA RMSE: %.2f\nGARMA RMSE: %.2f\n',
+            yardstick::rmse(compare_df,Actuals,ARIMA)$.estimate,
+            yardstick::rmse(compare_df,Actuals,GARMA)$.estimate))
+
+## ----sunspot4, fig.width=7, fig.height=5--------------------------------------
+arima_df <- data.frame(yr=1925:1935, sunspots=forecast(sunspots_arima_mdl,h=11)$mean,grp='AR(11) forecasts')
+
+garma_df <- data.frame(yr=1925:1935, sunspots=forecast(sunspots_garma_mdl,h=11)$mean,grp='GARMA(1),k=1 forecasts')
+
+actuals_df <- data.frame(yr=1749:1935,sunspots=as.numeric(sunspot.year[49:235]),grp='Actuals')
+
+df <- rbind(actuals_df,garma_df,arima_df)
+
+ggplot(df,aes(x=yr,y=sunspots,color=grp)) + geom_line() +
+  scale_color_manual(name='',values=c('Actuals'='darkgray','AR(11) forecasts'='darkgreen','GARMA(1),k=1 forecasts'='blue')) +
+  xlab('') + ylab('Sunspot Counts') +
+  geom_vline(xintercept=1924,color='red',linetype='dashed',size=0.3) +
+  theme_bw() +
+  ggtitle('Sunspot Forecasts: Comparing ARIMA(9,0,0) and GARMA(9,0),k=1')
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/semipara.R
 \name{ggbr_semipara}
 \alias{ggbr_semipara}
-\title{For a k=1 Gegenbauer process, use semi-parametric methods to estimate the Gegenbauer frequency and fractional differencing.}
+\title{Extract semiparametric estimates of the Gegenbauer factors.}
 \usage{
 ggbr_semipara(
   x,
@@ -16,7 +16,7 @@ ggbr_semipara(
 \arguments{
 \item{x}{(num) This should be a numeric vector representing the process to estimate.}
 
-\item{k}{(int) The number of Gegenabuer frequencies}
+\item{k}{(int) The number of Gegenbauer frequencies}
 
 \item{alpha}{(num)}
 
@@ -31,7 +31,7 @@ semi-parametric technique. "gsp" is the default. Refer Arteche (1998).}
 An object of class "garma_semipara".
 }
 \description{
-For a k=1 Gegenbauer process, use semi-parametric methods to estimate the Gegenbauer frequency and fractional differencing.
+For a Gegenbauer process, use semi-parametric methods to estimate the Gegenbauer frequency and fractional differencing.
 }
 \examples{
 data(AirPassengers)

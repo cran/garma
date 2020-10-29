@@ -44,5 +44,6 @@
   ret <- sum(eps^2,na.rm=TRUE)
   if (!is.finite(ret)|is.na(ret)) ret<-(1e500)
 
-  return(0.5*log(ret))
+  #return(0.5*log(ret))
+  return(ret)
 }

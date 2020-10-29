@@ -2,7 +2,7 @@
 % Please edit documentation in R/main.R
 \name{predict.garma_model}
 \alias{predict.garma_model}
-\title{The predict function predicts future values of a "garma_model" object.}
+\title{Predict future values.}
 \usage{
 \method{predict}{garma_model}(object, n.ahead = 1, ...)
 }
@@ -17,7 +17,9 @@
 A "ts" object containing the requested forecasts.
 }
 \description{
-The predict function predicts future values of a "garma_model" object.
+Predict ahead using algorithm of (2009) Godet, F
+"Linear prediction of long-range dependent time series", ESAIM: PS 13 115-134.
+DOI: 10.1051/ps:2008015
 }
 \examples{
 data(AirPassengers)

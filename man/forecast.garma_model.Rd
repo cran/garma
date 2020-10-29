@@ -2,14 +2,16 @@
 % Please edit documentation in R/main.R
 \name{forecast.garma_model}
 \alias{forecast.garma_model}
-\title{The forecast function predicts future values of a "garma_model" object, and is exactly the same as the "predict" function with slightly different parameter values.}
+\title{Forecast future values.}
 \usage{
-\method{forecast}{garma_model}(mdl, h = 1)
+\method{forecast}{garma_model}(object, h = 1, ...)
 }
 \arguments{
-\item{mdl}{(garma_model) The garma_model from which to forecast the values.}
+\item{object}{(garma_model) The garma_model from which to forecast the values.}
 
 \item{h}{(int) The number of time periods to predict ahead. Default: 1}
+
+\item{...}{Other parameters passed to the forecast function. For "garma_model" objects, these are ignored.}
 }
 \value{
 - a "ts" object containing the requested forecasts.
