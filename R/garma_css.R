@@ -24,7 +24,7 @@
 
   u <- c()
   fd <- c()
-  if (k>0) for (k1 in 1:k) {
+  for (k1 in seq_len(k)) {
     u     <- c(u,par[start])
     fd    <- c(fd,par[start+1])
     start <- start+2
@@ -41,9 +41,10 @@
     eps         <- signal::filter(ggbr_filter, eps)
   }
 
-  ret <- sum(eps^2,na.rm=TRUE)
-  if (!is.finite(ret)|is.na(ret)) ret<-(1e500)
+  eps <- eps^2
+  if (any(is.infinite(eps))) {
+    ret <- 1.0e200
+  } else ret <- sum(eps,na.rm=TRUE)
 
-  #return(0.5*log(ret))
   return(ret)
 }

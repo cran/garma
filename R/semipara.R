@@ -5,7 +5,7 @@
 #' @param k (int) The number of Gegenbauer frequencies
 #' @param alpha (num)
 #' @param method (char) One of "gsp" or "lpr" - lpr is the log-periodogram-regression technique, "gsp" is the Gaussian
-#' semi-parametric technique. "gsp" is the default. Refer Arteche (1998).
+#' semi-parametric technique. "lpr" is the default. Refer Arteche (1998).
 #' @param min_freq (num) The minimum frequency to search through for peaks - default 0.0.
 #' @param max_freq (num) The maximum frequency to search through for peaks - default 0.5.
 #' @return An object of class "garma_semipara".
@@ -15,7 +15,7 @@
 #' sp <- ggbr_semipara(ap)
 #' print(sp)
 #' @export
-ggbr_semipara <- function(x,k=1,alpha=0.8,method='gsp',min_freq=0.0,max_freq=0.5) {
+ggbr_semipara <- function(x,k=1,alpha=0.8,method='lpr',min_freq=0.0,max_freq=0.5) {
   if (!method%in%c('gsp','lpr')) stop('Invalid method. Should be one of "gsp" or "lpr".')
   if (alpha<=0|alpha>=1) stop('alpha should be between 0 and 1, but not 0 and not 1.')
   x <- as.numeric(x)
@@ -24,20 +24,20 @@ ggbr_semipara <- function(x,k=1,alpha=0.8,method='gsp',min_freq=0.0,max_freq=0.5
   peak_idx_list <- c()
   peaks <- c()
   if (method=='gsp')
-    for (k1 in 1:k) {
+    for (k1 in seq_len(k)) {
       r <- .gsp(x,alpha,peak_idx_list,min_freq,max_freq)
       peaks <- c(peaks,list(r))
       peak_idx_list <- c(peak_idx_list,r$f_idx)
     }
   if (method=='lpr')
-    for (k1 in 1:k) {
+    for (k1 in seq_len(k)) {
       r <- .lpr(x,alpha,peak_idx_list,min_freq,max_freq)
       peaks <- c(peaks,list(r))
       peak_idx_list <- c(peak_idx_list,r$f_idx)
     }
   # look for repeated peaks. Shouldn't happen but sometimes does
   note<-''
-  for (i in 1:(length(peaks)-1)) {
+  for (i in seq_len(length(peaks)-1)) {
     if (i>=length(peaks)) break;
     r1 <- peaks[[i]]
     for (j in length(peaks):(i+1)) {
@@ -81,8 +81,9 @@ print.ggbr_factors<-function(x,...) {
 #' @param ... further parameters for print function
 #' @export
 print.garma_semipara<-function(x,...) {
-  cat(sprintf('%s estimation of Gegenbauer process (k=1)\nFrequencies to use: (alpha=%f)\n\n',
+  cat(sprintf('%s estimation of Gegenbauer process (k=%d)\nFrequencies to use: (alpha=%f)\n\n',
               ifelse(x$method=='gsp','Gaussian Semi-Parametric','Log Periodogram Regression'),
+              length(x$ggbr_factors),
               x$alpha))
   print(x$ggbr_factors)
   if(length(x$note)>0) if (nchar(x$note)>1) cat(paste0('\n',x$note))
@@ -104,15 +105,32 @@ print.garma_semipara<-function(x,...) {
 #' summary(arima(ap_arma,order=c(1,0,0)))
 #' @export
 extract_arma<-function(x,ggbr_factors) {
-  if (!is.null(ggbr_factors)) {
-    for (factor in ggbr_factors) {
-      ggbr_filter <- signal::Arma(b=1, a=.ggbr.coef(length(x),factor$fd,factor$u))
-      sm          <- signal::filter(ggbr_filter, x)
-    }
-    sm            <- stats::ts(sm,start=stats::start(x),frequency=stats::frequency(x))
+  # if (!is.null(ggbr_factors)) {
+  #   sm <- x
+  #   for (factor in ggbr_factors) {
+  #     ggbr_filter <- signal::Arma(b=1, a=.ggbr.coef(length(sm),factor$fd,factor$u))
+  #     sm          <- signal::filter(ggbr_filter, sm)
+  #   }
+  #   sm            <- stats::ts(sm,start=stats::start(x),frequency=stats::frequency(x))
+  # }
+  # else sm<-x
+  # return(sm)
+  n <- length(x)
+  theta_vec <- 1
+  for (gf in ggbr_factors) {
+    gc <- .ggbr.coef(n,gf$fd,gf$u)
+    theta_vec <- pracma::conv(theta_vec,gc)
   }
-  else sm<-x
-  return(sm)
+  if (theta_vec[1]==1) theta_vec <- theta_vec[2:min(length(theta_vec),n)]
+  theta_vec <- rev(theta_vec)
+  qk <- length(theta_vec)
+  resid   <- numeric(0)
+  for (i in 1:n) {
+    ma_vec <- tail(c(rep(0,qk),resid),qk)
+    s <- sum(theta_vec*ma_vec)
+    resid <- c(resid,x[i]-s)
+  }
+  return(resid)
 }
 
 .garma_pgram<-function(x) {
