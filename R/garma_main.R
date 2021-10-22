@@ -664,6 +664,7 @@ forecast.garma_model<-function(object,h=1,...) {
 #' Fitted values are 1-step ahead predictions.
 #' @param object The garma_model object
 #' @param ... Other parameters. Ignored.
+#' @return (double) array of 1-step ahead fitted values for the model.
 #' @export
 fitted.garma_model<-function(object,...) {
   .byRef(object)  # allows us to update the values of object
@@ -680,6 +681,7 @@ fitted.garma_model<-function(object,...) {
 #' @param type (chr) The type of residuals. Must be 'response'.
 #' @param h (int) The number of periods ahead for the residuals. Must be 1.
 #' @param ... Other parameters. Ignored.
+#' @return (double) array of resideuals from the model.
 #' @export
 residuals.garma_model<-function(object,type='response',h=1,...) {
   .byRef(object)  # allows us to update the values of object
@@ -699,6 +701,7 @@ residuals.garma_model<-function(object,type='response',h=1,...) {
 #' Model Coefficients/parameters.
 #' @param object The garma_model object
 #' @param ... Other parameters. Ignored.
+#' @return (double) array of parameter value estimates from the fitted model.
 #' @export
 coef.garma_model<-function(object,...) {
   return(object$coef[1,])
@@ -709,6 +712,7 @@ coef.garma_model<-function(object,...) {
 #' AIC for model if available.
 #' @param object The garma_model object
 #' @param ... Other parameters. Ignored.
+#' @return (double) Approximate AIC - uses approximation of whichever methoid is used to find model params.
 #' @export
 AIC.garma_model<-function(object,...) {
   return(object$aic)
@@ -719,6 +723,7 @@ AIC.garma_model<-function(object,...) {
 #' Covariance matrix of parameters if available
 #' @param object The garma_model object
 #' @param ... Other parameters. Ignored.
+#' @return (double) estimated variance-covariance matrix of the parameter estimates
 #' @export
 vcov.garma_model<-function(object,...) {
   return(object$var.coef)
@@ -729,6 +734,7 @@ vcov.garma_model<-function(object,...) {
 #' Log Likelihood, or approximate likelihood or part likelihood, depending on the method.
 #' @param object The garma_model object
 #' @param ... Other parameters. Ignored.
+#' @return Object of class "logLik" with values for the (approx) log-likelihood for the model
 #' @export
 logLik.garma_model<-function(object,...) {
   # Need to figure out how to indicate these are REML estimates not true LL.
@@ -739,6 +745,7 @@ logLik.garma_model<-function(object,...) {
 #' garma package version
 #'
 #' The version function returns the garma package version.
+#' @return The package version.
 #' @examples
 #' library(garma)
 #' garma::version()

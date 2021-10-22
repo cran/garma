@@ -57,6 +57,7 @@ ggbr_semipara <- function(x,k=1,alpha=0.8,method='lpr',min_freq=0.0,max_freq=0.5
 #' Print a 'ggbr_factors' object.
 #' @param x An object of class ggbr_factors
 #' @param ... further parameters for print function
+#' @return null
 #' @export
 print.ggbr_factors<-function(x,...) {
   printf_9_4<-function(f) cat(sprintf('%9.4f',f))
@@ -79,6 +80,7 @@ print.ggbr_factors<-function(x,...) {
 #' Print a semiparameteric Gegenbauer estimation object.
 #' @param x An object of class garma_semipara.
 #' @param ... further parameters for print function
+#' @return null
 #' @export
 print.garma_semipara<-function(x,...) {
   cat(sprintf('%s estimation of Gegenbauer process (k=%d)\nFrequencies to use: (alpha=%f)\n\n',

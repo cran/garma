@@ -1,6 +1,6 @@
 #' summarise a garma_model object.
 #'
-#' The summary function provides a summary of a "garma_model" object.
+#' The summary function provides a summary of a "garma_model" object, printed to the output.
 #' @param object (garma_model) The garma_model from which to print the values.
 #' @param ... Other arguments. Ignored.
 #' @examples
@@ -8,6 +8,7 @@
 #' ap  <- as.numeric(diff(AirPassengers,12))
 #' mdl <- garma(ap,order=c(9,1,0),k=0,method='CSS',include.mean=FALSE)
 #' summary(mdl)
+#' @return (null)
 #' @export
 summary.garma_model<-function(object,...) {
   .print_garma_model(object,verbose=TRUE)
@@ -15,9 +16,10 @@ summary.garma_model<-function(object,...) {
 
 #' print a garma_model object.
 #'
-#' The print function prints a summary of a "garma_model" object.
+#' The print function prints a summary of a "garma_model" object, printed to the output.
 #' @param x (garma_model) The garma_model from which to print the values.
 #' @param ... Other arguments. Ignored.
+#' @return (null)
 #' @examples
 #' data(AirPassengers)
 #' ap  <- as.numeric(diff(AirPassengers,12))
