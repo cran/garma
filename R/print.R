@@ -36,7 +36,7 @@ print.garma_model<-function(x,...) {
   cat('Mean term was fitted.\n')
   if (!mdl$include.drift) cat('No ')
   cat('Drift (trend) term was fitted.\n\n')
-  if (mdl$method=='Whittle'&mdl$k>1) {
+  if (mdl$method=='Whittle'&mdl$k>1&verbose) {
     cat('NOTE: Giraitis, Hidalgo & Robinson (2001) establish consistency and asymptotic Normality only for k=1 processes.\n')
     cat('      Whilst it seems likely that the results also hold for a general k factor process, we are unaware of specific papers\n')
     cat('      which establish this point. The user should be aware therefore that the estimate standard errors etc are provided\n')
@@ -76,11 +76,11 @@ print.garma_model<-function(x,...) {
     if (mdl$method=='QML') cat(sprintf('approx. log likelihood = %f',mdl$loglik))
     if (mdl$method=='Whittle') cat(sprintf('approx. log likelihood = %f, aic = %f',mdl$loglik, mdl$aic))
     cat('\n')
-    if (mdl$order[1]>0&any(mdl$model$phi!=0)&!any(is.na(mdl$model$phi))) {
+    if (verbose&mdl$order[1]>0&any(mdl$model$phi!=0)&!any(is.na(mdl$model$phi))) {
       cat('\nAR Factor Table.\n')
       tswge::factor.wge(mdl$model$phi)
     }
-    if (mdl$order[3]>0&any(mdl$model$theta!=0)&!any(is.na(mdl$model$theta))) {
+    if (verbose&mdl$order[3]>0&any(mdl$model$theta!=0)&!any(is.na(mdl$model$theta))) {
       cat('\nMA Factor Table.\n')
       tswge::factor.wge(mdl$model$theta)
     }

@@ -94,7 +94,7 @@ garma<-function(x,
                 order=list(0,0,0),
                 k=1,
                 include.mean=(order[2]==0),
-                include.drift=(order[2]==1),
+                include.drift=FALSE,
                 method='Whittle',
                 d_lim=c(0,0.5),
                 freq_lim=c(0,0.5),
@@ -479,7 +479,8 @@ predict.garma_model<-function(object,n.ahead=1,...) {
   n <- length(orig_y)
   resid  <- as.numeric(object$resid)
 
-  mean_y <- beta0 <- object$model$beta0
+  beta0 <- object$model$beta0
+  mean_y <- mean(y)
   phi_vec <- c(1,-object$model$phi)
   theta_vec <- c(1,-object$model$theta)
   if (any(Mod(polyroot(phi_vec))<1)|any(Mod(polyroot(theta_vec))<1))
@@ -488,27 +489,43 @@ predict.garma_model<-function(object,n.ahead=1,...) {
   ggbr_inv_vec <-  1
 
   if (k>0) {
-    for (gf in object$model$ggbr_factors) ggbr_inv_vec <- pracma::conv(ggbr_inv_vec,.ggbr.coef(n+n.ahead+3,-gf$fd,gf$u))
+    for (gf in object$model$ggbr_factors) ggbr_inv_vec <- pracma::conv(ggbr_inv_vec,.ggbr.coef(n+n.ahead+2*k,-gf$fd,gf$u))
     # Next line multiplies and divides the various polynomials to get psi = theta * delta * ggbr / phi
     # pracma::conv gives polynomial multiplication, and pracma::deconv gives polynomial division.
     # we don't bother with the remainder. For non-ggbr models this may be a mistake.
-    pi1 <- pracma::conv(phi_vec,ggbr_inv_vec)
-    pi_vec  <- pracma::deconv(pi1,theta_vec)$q
+    pi_vec <- pracma::conv(phi_vec,ggbr_inv_vec)
+    if (length(theta_vec)>1) pi_vec <- pracma::deconv(pi_vec,theta_vec)$q
 
-    if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
-    for (h in 1:n.ahead) {
+    #if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
+    y_dash <- y - beta0 # if differenced or just include.mean=FALSE then beta0 is zero.
+    for (h in 1:(n.ahead)) {
       yy <- y_dash
       vec <- pi_vec[(length(yy)+1):2]
-      y_dash <- c(yy, -sum(yy*vec))
+      next_forecast <- (-sum(yy*vec))
+      #if (id>0) next_forecast <- next_forecast + mean_y
+      y_dash <- c(y_dash, next_forecast)
     }
-    pred <- tail(y_dash,n.ahead)
+    pred<-tail(y_dash,n.ahead)
+    if (id>0) {
+      if (object$include.drift) pred <- pred + object$model$drift  # mean(y)
+      pred<-diffinv(pred+mean_y,differences=id,xi=tail(orig_y,id))
+      if (length(pred)>n.ahead) pred <- head(pred,n.ahead)
+    } else {
+      pred <- pred + beta0
+      n <- length(orig_y)
+      if (object$include.drift) pred <- pred + ((n+1):(n+length(pred)))*object$model$drift
+    }
   } else { # ARIMA forecasting only
-    if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
+    #if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
+    y_dash <- y-beta0
     phi_vec <- rev(-phi_vec[2:length(phi_vec)])
-    theta_vec <- rev(-theta_vec[2:length(theta_vec)])
+    if (length(theta_vec)>1) theta_vec <- rev(-theta_vec[2:length(theta_vec)])
+    else theta_vec<-numeric(0)  # length will be zero. thus not used.
     # testing
     # if (q==2) theta_vec <- rev(c(0.2357262, -0.2934927))
-    # if (p==2) phi_vec <- rev(c(0.2396479, -0.1674436))
+    #print(phi_vec)
+    #if (p==2) phi_vec <- rev(c(0.2396479, -0.1674436))
+    #print(phi_vec)
     pp <- length(phi_vec)
     qq <- length(theta_vec)
     pred <- rep(beta0,n.ahead)
@@ -526,16 +543,15 @@ predict.garma_model<-function(object,n.ahead=1,...) {
         pred[i] <- pred[i] + sum(theta_vec*ma_vec)
       }
     }
-  }
-
-  if (id>0) {
-    if (object$include.drift) pred <- pred + object$model$drift  # mean(y)
-    pred<-diffinv(pred,differences=id,xi=tail(orig_y,id))
-    if (length(pred)>n.ahead) pred <- tail(pred,n.ahead)
-  } else {
-    pred <- pred + beta0
-    n <- length(orig_y)
-    if (object$include.drift) pred <- pred + ((n+1):(n+length(pred)))*object$model$drift
+    if (id>0) {
+      if (object$include.drift) pred <- pred + object$model$drift  # mean(y)
+      pred<-diffinv(pred,differences=id,xi=tail(orig_y,id))
+      if (length(pred)>n.ahead) pred <- tail(pred,n.ahead)
+    } else {
+      pred <- pred + beta0
+      n <- length(orig_y)
+      if (object$include.drift) pred <- pred + ((n+1):(n+length(pred)))*object$model$drift
+    }
   }
 
   # Now we have the forecasts, we set these up as a "ts" object

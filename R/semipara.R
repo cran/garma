@@ -210,7 +210,7 @@ extract_arma<-function(x,ggbr_factors) {
   denom    <- 4*sum(v^2)
   spec1    <- ssx$spec[(f_idx+1):(f_idx+m-1)]
   min_idx  <- f_idx - m
-  if (m<f_idx+1) spec2 <- ssx$spec[(f_idx-m):(f_idx-2)]
+  if (m<f_idx+1) spec2 <- ssx$spec[(f_idx-m):(f_idx-1)]
   else {
     spec2 <- c(ssx$spec[(f_idx-1):1], ssx$spec[length(ssx$spec):(length(ssx$spec)-(m-f_idx))])
     spec2 <- spec2[1:(m-1)]
