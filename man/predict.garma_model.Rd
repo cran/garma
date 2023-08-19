@@ -4,12 +4,24 @@
 \alias{predict.garma_model}
 \title{Predict future values.}
 \usage{
-\method{predict}{garma_model}(object, n.ahead = 1, ...)
+\method{predict}{garma_model}(
+  object,
+  n.ahead = 1,
+  max_wgts = length(object$diff_y),
+  ggbr_scale = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{(garma_model) The garma_model from which to predict the values.}
 
 \item{n.ahead}{(int) The number of time periods to predict ahead. Default: 1}
+
+\item{max_wgts}{(int) The number of past values to use when forecasting ahead.
+By default, all available data is used.}
+
+\item{ggbr_scale}{(logical) - whether or not to scale the Gegenbauer weights
+to add up to 1. By default this is FALSE.}
 
 \item{...}{Other parameters. Ignored.}
 }

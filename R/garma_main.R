@@ -75,11 +75,8 @@
 #' @return An S3 object of class "garma_model".
 #'
 #' @references
-#' C Chung. A generalized fractionally integrated autoregressive moving-average process.
-#' Journal of Time Series Analysis, 17(2):111–140, 1996.
-#'
-#' G Dissanayake, S Peiris, and T Proietti. State space modelling of Gegenbauer processes with long memory.
-#' Computational Statistics and Data Analysis, 100:115–130, 2016.
+#' R Hunt, S Peiris, N Weber. Estimation methods for stationary Gegenbauer processes.
+#' Statistical Papers 63:1707-1741 2022
 #'
 #' L Giraitis, J Hidalgo, and P Robinson. Gaussian estimation of parametric spectral density with unknown pole.
 #' The Annals of Statistics, 29(4):987–1023, 2001.
@@ -453,6 +450,10 @@ garma<-function(x,
 #'
 #' @param object (garma_model) The garma_model from which to predict the values.
 #' @param n.ahead (int) The number of time periods to predict ahead. Default: 1
+#' @param max_wgts (int) The number of past values to use when forecasting ahead.
+#' By default, all available data is used.
+#' @param ggbr_scale (logical) - whether or not to scale the Gegenbauer weights
+#' to add up to 1. By default this is FALSE.
 #' @param ... Other parameters. Ignored.
 #' @return A "ts" object containing the requested forecasts.
 #' @examples
@@ -461,7 +462,7 @@ garma<-function(x,
 #' mdl <- garma(ap,order=c(9,1,0),k=0,method='CSS',include.mean=FALSE)
 #' predict(mdl, n.ahead=12)
 #' @export
-predict.garma_model<-function(object,n.ahead=1,...) {
+predict.garma_model<-function(object,n.ahead=1,max_wgts=length(object$diff_y),ggbr_scale=FALSE,...) {
   ## Start of Function "predict"
 
   if (n.ahead<=0|!is.numeric(n.ahead)|is.na(n.ahead)) {
@@ -486,46 +487,54 @@ predict.garma_model<-function(object,n.ahead=1,...) {
   if (any(Mod(polyroot(phi_vec))<1)|any(Mod(polyroot(theta_vec))<1))
     warning('model estimates are not Stationary! Forecasts may become unbounded.\n')
 
-  ggbr_inv_vec <-  1
 
   if (k>0) {
-    for (gf in object$model$ggbr_factors) ggbr_inv_vec <- pracma::conv(ggbr_inv_vec,.ggbr.coef(n+n.ahead+2*k,-gf$fd,gf$u))
-    # Next line multiplies and divides the various polynomials to get psi = theta * delta * ggbr / phi
-    # pracma::conv gives polynomial multiplication, and pracma::deconv gives polynomial division.
-    # we don't bother with the remainder. For non-ggbr models this may be a mistake.
-    pi_vec <- pracma::conv(phi_vec,ggbr_inv_vec)
-    if (length(theta_vec)>1) pi_vec <- pracma::deconv(pi_vec,theta_vec)$q
+    # for (gf in object$model$ggbr_factors)
+    #     ggbr_inv_vec <- pracma::conv(ggbr_inv_vec,.ggbr.coef(n+n.ahead+2*k,-gf$fd,gf$u))
+    build_weights<-function(len) {
+      wgts <-  1
+      for (gf in object$model$ggbr_factors) {
+        fctr <- .ggbr.coef(len+2,-gf$fd,gf$u)
+        wgts <- pracma::conv(wgts,fctr)
+      }
+      # Next line multiplies and divides the various polynomials to get psi = theta * delta * ggbr / phi
+      # pracma::conv gives polynomial multiplication, and pracma::deconv gives polynomial division.
+      # we don't bother with the remainder. For non-ggbr models this may be a mistake.
+      wgts <- pracma::conv(phi_vec,wgts)
+      if (length(theta_vec)>1) wgts <- pracma::deconv(wgts,theta_vec)$q
 
-    #if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
+      return( wgts[(len+1):2] )
+    }
+
+    wgts <- build_weights(length(y)+n.ahead+id)
     y_dash <- y - beta0 # if differenced or just include.mean=FALSE then beta0 is zero.
+    gf <- object$model$ggbr_factors[[1]]
+    totsum <- (1-2.0*gf$u+gf$u^2)^(gf$fd)
     for (h in 1:(n.ahead)) {
       yy <- y_dash
-      vec <- pi_vec[(length(yy)+1):2]
-      next_forecast <- (-sum(yy*vec))
-      #if (id>0) next_forecast <- next_forecast + mean_y
+      wgts1 <- tail(wgts,max_wgts)
+      yy <- tail(yy,max_wgts)
+      next_forecast <- (-sum(yy*wgts1))
+      if (ggbr_scale) next_forecast <- next_forecast / abs(sum(wgts1)) * abs(totsum)
       y_dash <- c(y_dash, next_forecast)
     }
-    pred<-tail(y_dash,n.ahead)
+
+    pred<-y_dash[(length(y)+1):length(y_dash)]
     if (id>0) {
-      if (object$include.drift) pred <- pred + object$model$drift  # mean(y)
+      if (object$include.drift) pred <- pred + object$model$drift
       pred<-diffinv(pred+mean_y,differences=id,xi=tail(orig_y,id))
-      if (length(pred)>n.ahead) pred <- head(pred,n.ahead)
+      if (length(pred)>n.ahead) pred <- tail(pred,n.ahead)
     } else {
       pred <- pred + beta0
+      if (length(pred)>n.ahead) pred <- tail(pred,n.ahead)
       n <- length(orig_y)
       if (object$include.drift) pred <- pred + ((n+1):(n+length(pred)))*object$model$drift
     }
   } else { # ARIMA forecasting only
-    #if (id==0) y_dash <- y-beta0 else y_dash <- y-mean_y
     y_dash <- y-beta0
     phi_vec <- rev(-phi_vec[2:length(phi_vec)])
     if (length(theta_vec)>1) theta_vec <- rev(-theta_vec[2:length(theta_vec)])
     else theta_vec<-numeric(0)  # length will be zero. thus not used.
-    # testing
-    # if (q==2) theta_vec <- rev(c(0.2357262, -0.2934927))
-    #print(phi_vec)
-    #if (p==2) phi_vec <- rev(c(0.2396479, -0.1674436))
-    #print(phi_vec)
     pp <- length(phi_vec)
     qq <- length(theta_vec)
     pred <- rep(beta0,n.ahead)
@@ -568,6 +577,103 @@ predict.garma_model<-function(object,n.ahead=1,...) {
   return(list(pred=res))
 }
 
+#' Predict2 future values.
+#'
+#' Predict ahead using algorithm of (2009) Godet, F
+#' "Linear prediction of long-range dependent time series", ESAIM: PS 13 115-134.
+#' DOI: 10.1051/ps:2008015
+#'
+#' @param object (garma_model) The garma_model from which to predict the values.
+#' @param n.ahead (int) The number of time periods to predict ahead. Default: 1
+#' @return A "ts" object containing the requested forecasts.
+#' @export
+predict2<-function(object, n.ahead=1) {
+  ## Start of Function "predict"
+
+  if (n.ahead<=0|!is.numeric(n.ahead)|is.na(n.ahead)) {
+    message('n.ahead must be an integer g.t. 0.')
+    return(NA)
+  }
+
+  coef <- unname(object$coef[1,])
+  p  <- object$order[1]
+  id <- object$order[2]
+  q  <- object$order[3]
+  k  <- object$k
+  y  <- as.numeric(object$diff_y)
+  orig_y <- as.numeric(object$y)
+  n <- length(orig_y)
+  resid  <- as.numeric(object$resid)
+
+  beta0 <- object$model$beta0
+  mean_y <- mean(y)
+  phi_vec <- c(1,-object$model$phi)
+  theta_vec <- c(1,-object$model$theta)
+  if (any(Mod(polyroot(phi_vec))<1)|any(Mod(polyroot(theta_vec))<1))
+    warning('model estimates are not Stationary! Forecasts may become unbounded.\n')
+
+  gf<-object$model$ggbr_factors[[1]]
+  #  fctr <- .ggbr.coef(len+2,-gf$fd,gf$u)
+
+  legendre_array<-function(n,u,fd) {
+    legendre_initial_1<-function(u,fd) {
+      res1 <- ( (1.0+u)/(1.0-u) )^(fd-0.25) / gamma(1.5-2.0*fd)
+      res2 <- Re(hypergeo::hypergeo(0.5,0.5,1.5-2.0*fd,(1.0-u)/2))
+      return(res1*res2)
+    }
+    legendre_initial_2<-function(u,fd) {
+      res1 <- ( (1.0+u)/(1.0-u) )^(fd-0.25) / gamma(1.5-2.0*fd)
+      res3 <- Re(hypergeo::hypergeo(-0.5,1.5,1.5-2.0*fd,(1.0-u)/2))
+      return(res1*res3)
+    }
+
+    res <- rep(NA,n+3)
+    res[1] <- legendre_initial_1(u,fd)
+    res[2] <- legendre_initial_2(u,fd)
+
+    b <- 2.0*fd-0.5
+    for (j in 1:(n+1)) {
+      a <- j-0.5
+      res[j+2] <- (2.0*a-1.0)/(a-b)*u*res[j+1] - (a+b-1.0)/(a-b)*res[j]
+    }
+
+    return(res)
+  }
+  calc_acf<-function(n,u,fd) {
+    pos_leg_fcn <- legendre_array(n,u,fd)
+    neg_leg_fcn <- legendre_array(n,-u,fd)
+    nu <- acos(u)
+    acf_array <- rep(0,n+3) # don't store acf[0] since this will always be 1.0
+    for (j in 0:(n+2)) {
+      if (j%%2==0) acf_array[j+1] <- pos_leg_fcn[j+1]+neg_leg_fcn[j+1]
+      else acf_array[j+1] <- pos_leg_fcn[j+1]-neg_leg_fcn[j+1]
+    }
+
+    sign_sin_nu <- sign(sin(nu))
+    acf_array <- acf_array * gamma(1.0-2.0*fd)/(2.0*sqrt(pi)) * abs(2.0*sin(nu))^(0.5-2.0*fd) * sign_sin_nu
+    acf_array <- acf_array / acf_array[1]
+    return(acf_array)
+  }
+
+  print(gf$u)
+  print(gf$fd)
+  g <- calc_acf(n+n.ahead,gf$u,gf$fd)
+  print(g)
+  pred <- ltsa::TrenchForecast(y, g, mean_y, n, n.ahead)
+
+  # Now we have the forecasts, we set these up as a "ts" object
+  y_end = object$y_end
+  if(length(y_end)>1) {
+    if (object$y_freq >= y_end[2]) {
+      y_end[1] <- y_end[1]+1
+      y_end[2] <- y_end[2]-object$y_freq+1
+    }
+    else y_end[2] <- y_end[2] + 1
+  } else y_end <- y_end +1
+
+  res <- stats::ts(pred,start=y_end,frequency=object$y_freq)
+  return(list(pred=res))
+}
 
 #' Forecast future values.
 #'
@@ -590,7 +696,7 @@ forecast.garma_model<-function(object,h=1,...) {
 }
 
 .printf<-function(val) {
-  if (class(val)=='integer') fmtstr <- '%s: %d\n'
+  if (class(val)[1] == 'integer') fmtstr <- '%s: %d\n'
   else fmtstr <- '%s: %f\n'
   cat(sprintf(fmtstr,as.character(substitute(val)),val))
 }
