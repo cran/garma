@@ -1,6 +1,6 @@
-0a0f351e3ed74c9d307c8517425c2523 *DESCRIPTION
+ddc75288a3a28faf52a012f4921e9e15 *DESCRIPTION
 f06fe0f2a554eedbedbbd99f0466b5a8 *NAMESPACE
-f4cfb3ae66743af3e6797dc1e3e89631 *NEWS.md
+9fcdb2e72fa8bf9121f7e952ab8578ba *NEWS.md
 b7c031c7011044d99f61c5f2f4dad358 *R/AIC.R
 14cfa22aac030c75d4cd3e8210c41783 *R/coef.R
 da0060b927a5c0c4377e39b194dd9ef6 *R/extract_arma.R
@@ -9,7 +9,7 @@ da0060b927a5c0c4377e39b194dd9ef6 *R/extract_arma.R
 213f06d1b1f9c9e381dd9f4d528171ab *R/garma-package.R
 90db2a91e72e077ef85e726abf6bff9a *R/garma_ggtsdisplay.R
 4eaf6159cd38f555ea5d8beb4224a893 *R/garma_main.R
-0916e401c1f245b23af1678fb7368615 *R/gg_raw_pgram.R
+f7c297f62beb55300289a7b7d57f0ff1 *R/gg_raw_pgram.R
 ec92abbe2161233376c53971dda26717 *R/ggbr_semipara.R
 06f6ef9779e5d14bcd6b4f331b91fa5c *R/gof.R
 f86711d9f557c752dc0610ffb9d410d2 *R/internal_css_ggbr_obj.R
@@ -29,7 +29,7 @@ dad54bb7198ce69f999de6babd8f461c *R/internal_whittle_obj.R
 904401774e2e010f2723a4666b668afd *build/vignette.rds
 3c9e2d06e8560272e30c98b0c827478b *inst/doc/introduction.R
 b1c55dadfbba7047d9b6f4dc401a1532 *inst/doc/introduction.Rmd
-630e2f9323eb799a7f5c4b169580f187 *inst/doc/introduction.html
+7a80dbb1b89e765a16ebdc61dc09d6cc *inst/doc/introduction.html
 8c6d348dcb5bcc9bde6d4c80bc85e6a2 *inst/garma.pdf
 ca64917f7e6cb6450102749adc12b56b *inst/introduction.pdf
 31e860e5c139ab1fcc0500c0c53c7012 *man/AIC.garma_model.Rd
@@ -53,11 +53,7 @@ b7badad86df3ce0adbf80ad53200b92c *man/summary.garma_model.Rd
 0a593ad669f44be06033ed46c9cb19a1 *man/tsdiag.garma_model.Rd
 6b6ad9b122be29026ff09a8cbeffa4a0 *man/vcov.garma_model.Rd
 b76c597ae7f05e8a5f93fc264ea4fce2 *tests/testthat.R
-c5c537d7ae0666f98cac9cd5ab3e2a8f *tests/testthat/_snaps/garma.md
-9f5f2e59d39e206b35f438c2a5f927a6 *tests/testthat/_snaps/garma2.md
-8fecec718e0ac9d834247b9af8da3258 *tests/testthat/test-predict.R
-ab8b309117bbfa8c6a581dcb45b88f8b *tests/testthat/test_garma.R
-a868e341e5aa64f4792d59c78cb76b8c *tests/testthat/test_garma2.R
+7fabddb4b0f5216e83f3bf5b611a82d5 *tests/testthat/test_garma.R
 e02d4ef9b45f2d0765c4aa883f048c74 *vignettes/fig1.png
 542d1a335204bcb02a79744fc254cffa *vignettes/fig2.png
 2adff1ff8ff1e54e7441f369e0914b4f *vignettes/fig3.png
