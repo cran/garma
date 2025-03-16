@@ -1,6 +1,6 @@
-3e98d056b92b8b72bbcd4b58965be690 *DESCRIPTION
+9baea2ea18a981a22a83822517715707 *DESCRIPTION
 f06fe0f2a554eedbedbbd99f0466b5a8 *NAMESPACE
-9fcdb2e72fa8bf9121f7e952ab8578ba *NEWS.md
+99c071273783ac112ea684ed35719040 *NEWS.md
 b7c031c7011044d99f61c5f2f4dad358 *R/AIC.R
 14cfa22aac030c75d4cd3e8210c41783 *R/coef.R
 da0060b927a5c0c4377e39b194dd9ef6 *R/extract_arma.R
@@ -15,7 +15,7 @@ ec92abbe2161233376c53971dda26717 *R/ggbr_semipara.R
 f86711d9f557c752dc0610ffb9d410d2 *R/internal_css_ggbr_obj.R
 8c010093bf7ece556c69cf728480d159 *R/internal_fitted_values.R
 3e2269937a9905d73910f899f3f1e607 *R/internal_functions.R
-eef893380cc7b50e89997751368a08ea *R/internal_generic_optim.R
+8b7159b8d1903484058da6000c526ac7 *R/internal_generic_optim.R
 dad54bb7198ce69f999de6babd8f461c *R/internal_whittle_obj.R
 6f8430cdd0793aa60ca725871c9caacf *R/internal_wll_ggbr_obj.R
 33699f1f7265feb299d0c387e6c31ffc *R/logLik.R
@@ -26,10 +26,10 @@ dad54bb7198ce69f999de6babd8f461c *R/internal_whittle_obj.R
 14e8e0a079b0208c06e4b88ddd022f5b *R/tsdiag.R
 7b64e1ce907c2d32b55b2797520f6874 *R/vcov.R
 19b698153edbdc1cfb90b54661e54232 *README.md
-904401774e2e010f2723a4666b668afd *build/vignette.rds
-3c9e2d06e8560272e30c98b0c827478b *inst/doc/introduction.R
+af3a8a9655d611793ab37678d5514824 *build/vignette.rds
+4f8bd692bd5c348aa2512639e959b362 *inst/doc/introduction.R
 b1c55dadfbba7047d9b6f4dc401a1532 *inst/doc/introduction.Rmd
-c0c366a61442e4020560c13947bed5e6 *inst/doc/introduction.html
+6af7d421b84972a33f5fbfb3c22fa32c *inst/doc/introduction.html
 8c6d348dcb5bcc9bde6d4c80bc85e6a2 *inst/garma.pdf
 ca64917f7e6cb6450102749adc12b56b *inst/introduction.pdf
 31e860e5c139ab1fcc0500c0c53c7012 *man/AIC.garma_model.Rd
@@ -54,7 +54,7 @@ b7badad86df3ce0adbf80ad53200b92c *man/summary.garma_model.Rd
 6b6ad9b122be29026ff09a8cbeffa4a0 *man/vcov.garma_model.Rd
 b76c597ae7f05e8a5f93fc264ea4fce2 *tests/testthat.R
 c5c537d7ae0666f98cac9cd5ab3e2a8f *tests/testthat/_snaps/garma.md
-1fb85072aadf62a8287c1c0e890fa575 *tests/testthat/_snaps/garma2.md
+f62da6837544733b26104e12461eca65 *tests/testthat/_snaps/garma2.md
 b6e817c6a9ec6dcdde09c4e05b93a7a5 *tests/testthat/test-garma.R
 a868e341e5aa64f4792d59c78cb76b8c *tests/testthat/test-garma2.R
 8fecec718e0ac9d834247b9af8da3258 *tests/testthat/test-predict.R
